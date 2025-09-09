@@ -59,31 +59,33 @@ def populate_tables():
 # Add a new book
 def add_book():
     try:
-        id = int(input("Enter book ID: "))
-        title = input("Enter book title: ").strip()
+        #id = int(input("Enter book ID: "))
+        #title = input("Enter book title: ").strip()
         author_ID = int(input("Enter author ID: "))
-        author_name = (input("Enter author name: ")).strip()
-        country = input("Enter author country: ").strip()
-        qty = int(input("Enter quantity: "))
+        #author_name = (input("Enter author name: ")).strip()
+        #country = input("Enter author country: ").strip()
+        #qty = int(input("Enter quantity: "))
 
         with create_connection() as conn:
             c = conn.cursor()
             # Chech if author exists add if not
-            c.execute("SELECT id FROM author WHERE name = ? AND country = ?", (author_name, country))
-            row = c.fetchone()
-            print(row)
-            if row is None:
-                print("Book ID is not found")
-                return
-            else:
-                c.execute("INSERT INTO author (name, country) VALUES (?, ?)", (author_name, country))
-                author_id = c.lastrowid
-                conn.commit()
+            c.execute("SELECT id FROM author")
+            all_author_id = c.fetchall()
+            author_list = [] #changed list so we can access the data items
+            for i in range(0, len(all_author_id)):
+                author_list.append(all_author_id[i][0])
+         
+            print(author_list)
 
-            c.execute("INSERT INTO book (id, title, authorID, qty) VALUES (?, ?, ?, ?)",
-                      (id, title, author_id, qty))
-            conn.commit()
-            print("Book added successfully.")
+            if author_ID in author_list:
+                print("Author exists")
+                # add the book to the book db
+            else:
+                print("Adding new author")
+                # we need to add the new author details to the author db 
+                # add the book info to the book db 
+
+         
     except Exception as e:
         print(f"Error adding book:", e)
 
