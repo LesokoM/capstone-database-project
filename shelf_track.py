@@ -15,7 +15,7 @@ def create_tables():
 
     # Author table
     c.execute('''CREATE TABLE IF NOT EXISTS author (
-                id INTEGR PRIMARY KEY,
+                id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL,
                 country TEXT NOT NULL
         )
@@ -24,8 +24,8 @@ def create_tables():
     c.execute('''CREATE TABLE IF NOT EXISTS book (
                 id INTEGER PRIMARY KEY,
                 title TEXT NOT NULL,
-                authorID INTERGER NOT NULL,
-                qty INTERGER NOT NULL,
+                authorID INTEGER NOT NULL,
+                qty INTEGER NOT NULL,
                 FOREIGN KEY (authorID) REFERENCES author(id)
         )
     ''')
@@ -35,7 +35,7 @@ def create_tables():
 # Populate tables with initial data
 def populate_tables():
     with create_connection() as conn:
-        author = [
+        author_data = [ # Renamed to avoid conflict with author variable in add_book
             (1290, 'Charles Dickens', 'England'),
             (8937, 'J,K. Rowling', 'England'),
             (2356, 'C.S. Lewis', 'Ireland'),
@@ -43,7 +43,7 @@ def populate_tables():
             (5620, 'Lewis Carroll', 'England'),
         ]
         # Insert books
-        books = [
+        books_data = [ # Renamed to avoid confict with book variable in add_book
             (3001, 'A Tale of Two Citites', 1290, 30,),
             (3002, "Harry Potter and the Philosopher's Stone", 8937, 40),
             (3003, 'The Lion, the Witch and the Wardrobe', 2356, 25),
@@ -52,8 +52,8 @@ def populate_tables():
         ]
 
         c = conn.cursor()
-        c.executemany('INSERT OR IGNORE INTO author VALUES (?, ?, ?)', author)
-        c.executemany('INSERT OR IGNORE INTO book VALUES (?, ?, ?, ?)', books)
+        c.executemany('INSERT OR IGNORE INTO author VALUES (?, ?, ?)', author_data)
+        c.executemany('INSERT OR IGNORE INTO book VALUES (?, ?, ?, ?)', books_data)
         conn.commit()
 
 # Add a new book
@@ -62,23 +62,26 @@ def add_book():
         id = int(input("Enter book ID: "))
         title = input("Enter book title: ").strip()
         author_ID = int(input("Enter author ID: "))
-        country = input("Enter author name: ")
+        author_name = (input("Enter author name: ")).strip()
+        country = input("Enter author country: ").strip()
         qty = int(input("Enter quantity: "))
 
         with create_connection() as conn:
             c = conn.cursor()
             # Chech if author exists add if not
-            c.execute("SELECT id FROM author WHERE name = ? AND country = ? ", (author_ID, country))
+            c.execute("SELECT id FROM author WHERE name = ? AND country = ?", (author_name, country))
             row = c.fetchone()
-            if row:
-                author_id = row[0]
+            print(row)
+            if row is None:
+                print("Book ID is not found")
+                return
             else:
-                c.execute("INSERT INTO author (name, country) VALUES (?, ?)", author_ID, country)
+                c.execute("INSERT INTO author (name, country) VALUES (?, ?)", (author_name, country))
                 author_id = c.lastrowid
                 conn.commit()
 
             c.execute("INSERT INTO book (id, title, authorID, qty) VALUES (?, ?, ?, ?)",
-                      id, title, author_id, qty)
+                      (id, title, author_id, qty))
             conn.commit()
             print("Book added successfully.")
     except Exception as e:
@@ -140,7 +143,6 @@ def delete_book():
             c = conn.cursor()
             c.execute("SELECT id FROM book WHERE id = ?", (book_id,))
             if c.fetchone():
-                c.execute("DELETE FROM book WHERE id = ?", book_id)
                 conn.commit()
                 print("Book deleted.")
             else:
@@ -161,7 +163,7 @@ def search_books():
     keyword = input("Enter keyword to search in book titles: ").strip()
     with create_connection() as conn:
         c = conn.cursor()
-        c.execute("SELECT book.id, book.title author.name author.country, book.qty \
+        c.execute("SELECT book.id, book.title, author.name, author.country, book.qty \
                    FROM book JOIN author ON book.authorID = author.id WHERE book.title \
                    LIKE ?", ('%' + keyword + '%',))
         results = c.fetchall()
@@ -207,7 +209,7 @@ def main():
     choice = " "
     while choice != "0":
         print("\nMenu:")        
-        print("1. Enter Book")
+        print("1. Add a new book")
         print("2. Update Book")
         print("3. Delete Book")
         print("4. Search Books")
